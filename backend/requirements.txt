@@ -4,9 +4,8 @@ python-dotenv
 pandas
 numpy
 scikit-learn
-ydata-profiling
 langgraph
 langchain-groq
-chromadb
-supabase
 python-multipart
+requests
+httpx
