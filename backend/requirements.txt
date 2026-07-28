@@ -4,6 +4,7 @@ python-dotenv
 pandas
 numpy
 scikit-learn
+openpyxl
 langgraph
 langchain-groq
 python-multipart
