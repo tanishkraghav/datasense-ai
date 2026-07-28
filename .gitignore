@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Build & Storage
+dist/
+build/
+storage/
+.env
+
+# System & IDE
+.DS_Store
+.vscode/
+.idea/

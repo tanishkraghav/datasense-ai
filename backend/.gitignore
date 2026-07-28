@@ -1,0 +1,8 @@
+# Environment
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Local dataset storage & cache
+storage/
