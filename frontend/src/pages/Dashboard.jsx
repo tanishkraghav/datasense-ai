@@ -21,22 +21,30 @@ export default function Dashboard() {
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  const fetchDatasets = async () => {
+  const fetchDatasetsWithRetry = async (retryCount = 0) => {
     setLoading(true)
     setError('')
-    setIsWakingUp(false)
 
-    // Set waking up notice if loading takes longer than 3 seconds
+    // Show waking up notice after 2 seconds
     const timer = setTimeout(() => {
       setIsWakingUp(true)
-    }, 3000)
+    }, 2000)
 
     try {
       const data = await listDatasets()
-      setDatasets(data)
+      setDatasets(data || [])
+      setError('') // Clear any error on success
     } catch (err) {
-      console.error(err)
-      setError('Failed to load datasets. If the server was idle, click Retry below to reconnect.')
+      console.warn(`Connection attempt ${retryCount + 1} failed, retrying...`, err)
+      
+      // Auto-retry up to 3 times for Render cold start
+      if (retryCount < 3) {
+        setIsWakingUp(true)
+        await new Promise((resolve) => setTimeout(resolve, 4000))
+        return fetchDatasetsWithRetry(retryCount + 1)
+      }
+
+      setError('Unable to connect to backend server. Please click Retry below.')
     } finally {
       clearTimeout(timer)
       setLoading(false)
@@ -45,7 +53,7 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    fetchDatasets()
+    fetchDatasetsWithRetry()
   }, [])
 
   return (
@@ -65,7 +73,7 @@ export default function Dashboard() {
 
         <div className="flex items-center space-x-3">
           <button
-            onClick={fetchDatasets}
+            onClick={() => fetchDatasetsWithRetry(0)}
             disabled={loading}
             className="p-2.5 bg-slate-800 hover:bg-slate-700 active:bg-slate-900 border border-slate-700 text-slate-300 rounded-xl transition-colors disabled:opacity-50"
             title="Refresh datasets"
@@ -83,25 +91,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Cold Start / Waking Up Notice */}
-      {isWakingUp && loading && (
-        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-300 text-sm flex items-center space-x-3 shadow-lg animate-pulse">
-          <Server className="w-5 h-5 text-amber-400 flex-shrink-0" />
-          <div>
-            <span className="font-bold block">Waking up backend server...</span>
-            <span className="text-xs text-amber-400/80">
-              Render Free Instance is spinning up from idle state. This takes ~15-30 seconds on cold start. Please stand by!
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Error state */}
-      {error && (
+      {/* Persistent Connection Error State (Only shown if ALL retries fail) */}
+      {error && !loading && (
         <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm flex items-center justify-between">
           <span>{error}</span>
           <button
-            onClick={fetchDatasets}
+            onClick={() => fetchDatasetsWithRetry(0)}
             className="text-xs bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 px-4 py-1.5 rounded-lg border border-rose-500/40 font-semibold transition-colors"
           >
             Retry Connection
@@ -109,32 +104,29 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Loading Grid Skeleton with Spinner */}
+      {/* Loading & Connection State */}
       {loading ? (
-        <div className="space-y-6">
-          <div className="flex items-center justify-center space-x-3 py-6 text-slate-400">
-            <Loader2 className="w-6 h-6 text-teal-400 animate-spin" />
-            <span className="text-sm font-medium text-slate-300">
-              {isWakingUp ? 'Spinning up server instance...' : 'Fetching dataset catalog...'}
-            </span>
+        <div className="bg-slate-900/60 border border-slate-800 rounded-3xl p-12 text-center space-y-6">
+          <div className="inline-flex p-4 bg-teal-500/10 border border-teal-500/30 rounded-3xl text-teal-400">
+            <Loader2 className="w-8 h-8 animate-spin" />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="h-52 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 animate-pulse space-y-4"
-              >
-                <div className="h-6 bg-slate-800 rounded w-3/4"></div>
-                <div className="h-4 bg-slate-800/60 rounded w-1/2"></div>
-                <div className="h-10 bg-slate-800/80 rounded mt-6"></div>
-              </div>
-            ))}
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold text-slate-100">
+              Connecting to DataSense AI Engine...
+            </h3>
+            <p className="text-xs text-teal-400/90 max-w-md mx-auto font-mono">
+              {isWakingUp
+                ? '⚡ Server instance is booting up (Render Free Tier wakeup 15-30s)...'
+                : 'Initializing secure API connection...'}
+            </p>
+          </div>
+          <div className="w-48 h-1.5 bg-slate-800 rounded-full mx-auto overflow-hidden">
+            <div className="w-full h-full bg-gradient-to-r from-teal-500 to-cyan-400 animate-pulse"></div>
           </div>
         </div>
       ) : datasets.length === 0 ? (
-        /* Empty State */
-        <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-2xl p-8 space-y-5">
+        /* Clean Empty State - NO RED ERROR BANNER */
+        <div className="text-center py-16 bg-slate-900/40 border border-slate-800/80 rounded-3xl p-8 space-y-5">
           <div className="inline-flex p-4 bg-slate-800/60 border border-slate-700/60 rounded-2xl text-teal-400">
             <Database className="w-12 h-12" />
           </div>
@@ -147,7 +139,7 @@ export default function Dashboard() {
           <div>
             <Link
               to="/upload"
-              className="inline-flex items-center space-x-2 bg-teal-500 hover:bg-teal-400 text-slate-950 font-semibold px-6 py-3 rounded-xl shadow-lg shadow-teal-500/20 transition-all hover:scale-105"
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 font-bold px-6 py-3 rounded-xl shadow-lg shadow-teal-500/20 transition-all hover:scale-105"
             >
               <UploadCloud className="w-5 h-5" />
               <span>Upload Your First Dataset</span>
