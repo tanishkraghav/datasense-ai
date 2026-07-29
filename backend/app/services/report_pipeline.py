@@ -174,21 +174,12 @@ def correlation_node(state: ReportState) -> ReportState:
 
 def recommendation_node(state: ReportState) -> ReportState:
     """5. recommendation_node: Generates 3-5 actionable recommendations as a JSON array of strings."""
-    context = (
-        f"--- Schema Summary ---\n{state.get('schema_summary')}\n\n"
-        f"--- Dataset Overview ---\n{state.get('overview_narrative')}\n\n"
-        f"--- Anomaly Analysis ---\n{state.get('anomaly_narrative')}\n\n"
-        f"--- Correlation Analysis ---\n{state.get('correlation_narrative')}\n"
-    )
+    plant_exec = state["profile"].get("plant_executive_summary", {})
+    m_breakdown = state["profile"].get("machine_breakdown", [])
+    problem_child = plant_exec.get("problem_child_machine", "N/A")
+    total_loss_inr = plant_exec.get("total_est_loss_inr", 0.0)
 
-    system_prompt = (
-        "You are an expert industrial operations consultant. Provide actionable recommendations based ONLY on the context provided. "
-        "Return ONLY a JSON array of 3 to 5 strings."
-    )
-    user_prompt = (
-        f"Context:\n{context}\n\n"
-        "Based on this analysis, generate exactly 3 to 5 concise, actionable operational recommendations for plant management.\n"
-        "Output MUST be a raw JSON array of strings (e.g. [\"Recommendation 1\", \"Recommendation 2\", \"Recommendation 3\"])."
+    context = (
     )
 
     fallback_recs = [

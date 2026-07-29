@@ -40,6 +40,10 @@ import {
   ShieldAlert,
   Zap,
   Sliders,
+  DollarSign,
+  AlertOctagon,
+  Wrench,
+  Flame,
 } from 'lucide-react'
 
 // Helper for rendering inline charts inside Chat messages
@@ -296,6 +300,8 @@ export default function Report() {
 
   const indSignals = profile?.industrial_signals || {}
   const correlations = profile?.correlations || []
+  const plantExec = profile?.plant_executive_summary || {}
+  const machineBreakdown = profile?.machine_breakdown || []
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 print:p-0 print:m-0 print:max-w-none">
@@ -332,7 +338,7 @@ export default function Report() {
               {generating ? 'Generating Comprehensive AI Report with LangGraph...' : 'Loading Report Workspace...'}
             </h2>
             <p className="text-sm text-slate-400 max-w-md mx-auto">
-              Synthesizing schema intent, Isolation Forest anomalies, 3-sigma signal breaches, and actionable recommendations.
+              Synthesizing schema intent, machine entity risk, financial impact, and actionable recommendations.
             </p>
           </div>
         </div>
@@ -354,7 +360,7 @@ export default function Report() {
           {/* LEFT COLUMN: COMPREHENSIVE REPORT BODY */}
           <div className="lg:col-span-2 space-y-8 print:w-full">
             
-            {/* 1. EXECUTIVE REPORT BANNER */}
+            {/* 1. EXECUTIVE OPERATOR & FINANCIAL IMPACT BANNER */}
             <div className="bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-800/80 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6 print:bg-white print:text-black print:border-none print:shadow-none">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center space-x-3">
@@ -363,7 +369,7 @@ export default function Report() {
                   </div>
                   <div>
                     <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-100 print:text-black">
-                      Industrial Operational Report
+                      Plant Operations Executive Summary
                     </h1>
                     <span className="text-sm font-mono text-teal-400 print:text-black">
                       Dataset ID: {datasetId}
@@ -371,53 +377,134 @@ export default function Report() {
                   </div>
                 </div>
 
-                <div className="inline-flex items-center space-x-2 px-3.5 py-1.5 bg-emerald-500/10 border border-emerald-500/30 rounded-full text-emerald-400 text-xs font-semibold uppercase tracking-wider print:border-gray-300 print:text-black">
-                  <Activity className="w-4 h-4" />
-                  <span>Profile & Report Validated</span>
+                {/* Severity & Urgency Status Badge */}
+                <div
+                  className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full text-xs font-extrabold uppercase tracking-wider ${
+                    plantExec.overall_status === 'CRITICAL ACTION REQUIRED'
+                      ? 'bg-rose-500/10 text-rose-400 border border-rose-500/40 animate-pulse'
+                      : plantExec.overall_status?.includes('WATCH')
+                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/40'
+                      : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/40'
+                  }`}
+                >
+                  <AlertOctagon className="w-4 h-4" />
+                  <span>{plantExec.overall_status || 'NORMAL OPERATIONAL PARAMETERS'}</span>
                 </div>
               </div>
 
-              {/* Dataset Quick Metrics Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-800/80 print:border-gray-300">
-                <div className="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl print:bg-gray-100">
-                  <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold block print:text-gray-600">
-                    Dataset Filename
+              {/* Financial & Machine Operator Highlight Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-slate-800/80 print:border-gray-300">
+                
+                {/* Problem Child Card */}
+                <div className="p-4 bg-slate-950/80 border border-amber-500/30 rounded-2xl space-y-1">
+                  <div className="flex items-center justify-between text-xs text-amber-400 font-semibold uppercase tracking-wider">
+                    <span>Problem Child Machine</span>
+                    <Flame className="w-4 h-4 text-amber-400" />
+                  </div>
+                  <span className="text-xl font-extrabold font-mono text-slate-100 block">
+                    {plantExec.problem_child_machine || 'None Flagged'}
                   </span>
-                  <span className="text-sm font-bold font-mono text-slate-200 truncate block print:text-black" title={profile?.filename}>
-                    {profile?.filename || 'dataset.csv'}
-                  </span>
-                </div>
-
-                <div className="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl print:bg-gray-100">
-                  <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold block print:text-gray-600">
-                    Row & Column Count
-                  </span>
-                  <span className="text-sm font-bold font-mono text-teal-400 print:text-black">
-                    {profile?.shape?.rows?.toLocaleString() || 0} rows × {profile?.shape?.columns || 0} cols
+                  <span className="text-[11px] text-slate-400 block">
+                    High Downtime & Anomaly Concentration
                   </span>
                 </div>
 
-                <div className="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl print:bg-gray-100">
-                  <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold block print:text-gray-600">
-                    Memory Footprint
+                {/* Production Financial Loss Card */}
+                <div className="p-4 bg-slate-950/80 border border-rose-500/30 rounded-2xl space-y-1">
+                  <div className="flex items-center justify-between text-xs text-rose-400 font-semibold uppercase tracking-wider">
+                    <span>Est. Production Loss</span>
+                    <DollarSign className="w-4 h-4 text-rose-400" />
+                  </div>
+                  <span className="text-xl font-extrabold font-mono text-rose-400 block">
+                    ₹{plantExec.total_est_loss_inr ? plantExec.total_est_loss_inr.toLocaleString() : '0'}
                   </span>
-                  <span className="text-sm font-bold font-mono text-cyan-400 print:text-black">
-                    {profile?.memory_usage_mb || 0} MB
+                  <span className="text-[11px] text-slate-400 block">
+                    (${plantExec.total_est_loss_usd || 0} USD at ₹500/min rate)
                   </span>
                 </div>
 
-                <div className="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl print:bg-gray-100">
-                  <span className="text-xs text-slate-500 uppercase tracking-wider font-semibold block print:text-gray-600">
-                    Anomalous Rows
+                {/* Total Downtime Hours Card */}
+                <div className="p-4 bg-slate-950/80 border border-cyan-500/30 rounded-2xl space-y-1">
+                  <div className="flex items-center justify-between text-xs text-cyan-400 font-semibold uppercase tracking-wider">
+                    <span>Total Machine Downtime</span>
+                    <Wrench className="w-4 h-4 text-cyan-400" />
+                  </div>
+                  <span className="text-xl font-extrabold font-mono text-cyan-300 block">
+                    {plantExec.total_downtime_hours || 0} hrs
                   </span>
-                  <span className="text-sm font-bold font-mono text-amber-400 print:text-black">
-                    {profile?.anomalies?.anomalous_row_count ?? 0} ({profile?.anomalies?.anomalous_row_pct ?? 0}%)
+                  <span className="text-[11px] text-slate-400 block">
+                    ({plantExec.total_downtime_minutes || 0} total downtime mins)
                   </span>
                 </div>
+
               </div>
             </div>
 
-            {/* 2. OVERVIEW & SCHEMA INTENT */}
+            {/* 2. OPERATOR ROLLUP: WHICH MACHINE IS MY PROBLEM CHILD? */}
+            {machineBreakdown.length > 0 && (
+              <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6 print:bg-white print:border-gray-300 print:shadow-none">
+                <div className="flex items-center justify-between border-b border-slate-800 pb-3 print:border-gray-300">
+                  <div className="flex items-center space-x-2">
+                    <Wrench className="w-5 h-5 text-amber-400 print:hidden" />
+                    <h2 className="text-xl font-bold text-slate-100 print:text-black">
+                      Equipment Rollup: Which Machine is My Problem Child?
+                    </h2>
+                  </div>
+                  <span className="text-xs text-slate-400 font-mono">Entity-Level Downtime & Financial Risk</span>
+                </div>
+
+                <div className="overflow-x-auto border border-slate-800 rounded-2xl print:border-gray-300">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 print:bg-gray-100 print:text-black">
+                      <tr>
+                        <th className="p-3">Machine / Asset ID</th>
+                        <th className="p-3">Urgency Status</th>
+                        <th className="p-3">Downtime (Mins)</th>
+                        <th className="p-3">Downtime (Hrs)</th>
+                        <th className="p-3">Est. Production Loss (₹)</th>
+                        <th className="p-3">Record Count</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 text-slate-300 print:divide-gray-200 print:text-black">
+                      {machineBreakdown.map((m, idx) => (
+                        <tr
+                          key={m.machine_id}
+                          className={idx === 0 ? 'bg-amber-500/10 font-bold' : 'hover:bg-slate-800/40'}
+                        >
+                          <td className="p-3 font-semibold text-slate-100 print:text-black flex items-center space-x-2">
+                            <span>{m.machine_id}</span>
+                            {idx === 0 && (
+                              <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded font-extrabold uppercase">
+                                #1 Problem Child
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                m.severity === 'CRITICAL'
+                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                  : m.severity === 'WARNING'
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                              }`}
+                            >
+                              {m.severity}
+                            </span>
+                          </td>
+                          <td className="p-3 text-amber-300 font-bold">{m.downtime_minutes} mins</td>
+                          <td className="p-3">{m.downtime_hours} hrs</td>
+                          <td className="p-3 text-rose-400 font-bold">₹{m.est_financial_loss_inr?.toLocaleString()}</td>
+                          <td className="p-3 text-slate-400">{m.record_count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* 3. OVERVIEW & SCHEMA INTENT */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6 print:bg-white print:border-gray-300 print:shadow-none">
               <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 print:border-gray-300">
                 <Sparkles className="w-5 h-5 text-teal-400 print:hidden" />
@@ -440,7 +527,7 @@ export default function Report() {
               </div>
             </div>
 
-            {/* 3. INTERACTIVE TELEMETRY STREAM & TREND ANALYSIS */}
+            {/* 4. INTERACTIVE TELEMETRY STREAM & TREND ANALYSIS */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6 print:bg-white print:border-gray-300 print:shadow-none">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800 pb-3 print:border-gray-300">
                 <div className="flex items-center space-x-2">
@@ -534,7 +621,7 @@ export default function Report() {
               )}
             </div>
 
-            {/* 4. DATA QUALITY & COLUMN STATISTICS */}
+            {/* 5. DATA QUALITY & COLUMN STATISTICS */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6 print:bg-white print:border-gray-300 print:shadow-none">
               <div className="flex items-center justify-between border-b border-slate-800 pb-3 print:border-gray-300">
                 <div className="flex items-center space-x-2">
@@ -601,7 +688,7 @@ export default function Report() {
               </div>
             </div>
 
-            {/* 5. ANOMALIES & INDUSTRIAL SIGNALS */}
+            {/* 6. ANOMALIES & INDUSTRIAL SIGNALS */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6 print:bg-white print:border-gray-300 print:shadow-none">
               <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 print:border-gray-300">
                 <ShieldAlert className="w-5 h-5 text-amber-400 print:hidden" />
@@ -672,7 +759,7 @@ export default function Report() {
               )}
             </div>
 
-            {/* 6. STRATEGIC ACTION PLAN & RECOMMENDATIONS */}
+            {/* 7. STRATEGIC ACTION PLAN & RECOMMENDATIONS */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6 print:bg-white print:border-gray-300 print:shadow-none">
               <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 print:border-gray-300">
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 print:hidden" />
@@ -729,7 +816,7 @@ export default function Report() {
                   <div className="text-center py-12 space-y-3">
                     <Bot className="w-10 h-10 text-slate-600 mx-auto" />
                     <p className="text-xs text-slate-400 max-w-[200px] mx-auto">
-                      Ask questions like <span className="text-teal-300 font-mono">"what is the average temperature"</span> or <span className="text-teal-300 font-mono">"show rows where status is fault"</span>.
+                      Ask questions like <span className="text-teal-300 font-mono">"which machine had the most downtime"</span> or <span className="text-teal-300 font-mono">"show rows where status is fault"</span>.
                     </p>
                   </div>
                 ) : (

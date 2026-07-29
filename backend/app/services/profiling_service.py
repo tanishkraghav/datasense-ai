@@ -284,6 +284,88 @@ def profile_dataset(df: pd.DataFrame) -> dict:
                             "sample_breach_values": [],
                         }
 
+    # 4. Operator & Machine Entity Rollup (Problem Child & Financial Impact)
+    machine_col = None
+    for c in df.columns:
+        if any(kw in str(c).lower() for kw in ["machine", "asset", "equipment", "unit_id", "device_id", "mc_id"]):
+            machine_col = c
+            break
+
+    downtime_col = None
+    for c in df.columns:
+        if any(kw in str(c).lower() for kw in ["downtime", "down_time", "loss_minutes", "stop_time"]):
+            downtime_col = c
+            break
+
+    machine_breakdown = []
+    problem_child_machine = None
+    total_downtime_mins = 0.0
+    total_loss_inr = 0.0
+
+    if machine_col is not None:
+        try:
+            grouped = df.groupby(machine_col)
+            for m_id, group in grouped:
+                m_str = str(m_id)
+                rec_cnt = len(group)
+                dt_mins = float(group[downtime_col].sum()) if (downtime_col and pd.api.types.is_numeric_dtype(group[downtime_col])) else 0.0
+                total_downtime_mins += dt_mins
+
+                # Financial loss estimate at ₹500/min ($6/min) baseline production cost
+                loss_inr = round(dt_mins * 500.0, 2)
+                total_loss_inr += loss_inr
+
+                # Severity logic
+                if dt_mins > 60:
+                    sev = "CRITICAL"
+                elif dt_mins > 10:
+                    sev = "WARNING"
+                else:
+                    sev = "HEALTHY"
+
+                machine_breakdown.append({
+                    "machine_id": m_str,
+                    "record_count": rec_cnt,
+                    "downtime_minutes": round(dt_mins, 1),
+                    "downtime_hours": round(dt_mins / 60.0, 2),
+                    "est_financial_loss_inr": loss_inr,
+                    "severity": sev,
+                })
+
+            # Sort by highest downtime / financial loss descending to identify Problem Child
+            machine_breakdown.sort(key=lambda x: (x["downtime_minutes"], x["record_count"]), reverse=True)
+            if machine_breakdown:
+                problem_child_machine = machine_breakdown[0]["machine_id"]
+        except Exception as e:
+            warnings.append(f"Machine entity rollup calculation failed: {str(e)}")
+    else:
+        # Fallback if no machine_col exists: calculate global downtime if downtime_col is present
+        if downtime_col and pd.api.types.is_numeric_dtype(df[downtime_col]):
+            total_downtime_mins = float(df[downtime_col].sum())
+            total_loss_inr = round(total_downtime_mins * 500.0, 2)
+
+    # Determine Plant Health Status & Urgency Tier
+    anom_cnt = anomalies.get("anomalous_row_count", 0) if anomalies else 0
+    if total_downtime_mins > 120 or anom_cnt > 10:
+        overall_status = "CRITICAL ACTION REQUIRED"
+        urgency_tier = "HIGH"
+    elif total_downtime_mins > 30 or anom_cnt > 0:
+        overall_status = "ELEVATED RISK / WATCH LIST"
+        urgency_tier = "MEDIUM"
+    else:
+        overall_status = "NORMAL OPERATIONAL PARAMETERS"
+        urgency_tier = "LOW"
+
+    plant_executive_summary = {
+        "overall_status": overall_status,
+        "urgency_tier": urgency_tier,
+        "problem_child_machine": problem_child_machine or "N/A",
+        "total_downtime_minutes": round(total_downtime_mins, 1),
+        "total_downtime_hours": round(total_downtime_mins / 60.0, 2),
+        "total_est_loss_inr": total_loss_inr,
+        "total_est_loss_usd": round(total_loss_inr / 83.0, 2),
+    }
+
     # Extract sample rows for telemetry charts & visualization
     sample_df = df.head(50).copy()
     sample_rows = []
@@ -299,6 +381,9 @@ def profile_dataset(df: pd.DataFrame) -> dict:
         "anomalies": anomalies,
         "industrial_signals": industrial_signals,
         "sample_rows": sample_rows,
+        "machine_breakdown": machine_breakdown,
+        "plant_executive_summary": plant_executive_summary,
         "warnings": warnings,
     }
+
 
