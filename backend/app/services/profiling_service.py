@@ -223,18 +223,24 @@ def profile_dataset(df: pd.DataFrame) -> dict:
     elif len(numeric_cols) < 2:
         warnings.append("Fewer than 2 numeric columns available for correlation analysis.")
 
-    # 2. Anomalies using Isolation Forest
+    # 2. Anomalies using Isolation Forest (sampled for fast performance)
     anomalies: Optional[Dict[str, Any]] = None
     if len(valid_numeric_cols) >= 2:
         clean_num_df = df[valid_numeric_cols].dropna()
         if len(clean_num_df) >= 5:
             try:
-                clf = IsolationForest(contamination=0.05, random_state=42)
-                preds = clf.fit_predict(clean_num_df)
+                # Sample max 5000 rows for Isolation Forest fit to run in under 0.1s
+                fit_df = clean_num_df.sample(n=min(5000, len(clean_num_df)), random_state=42)
+                clf = IsolationForest(contamination=0.05, random_state=42, n_jobs=-1)
+                clf.fit(fit_df)
+                
+                # Predict on top 10000 rows
+                predict_df = clean_num_df.head(10000)
+                preds = clf.predict(predict_df)
                 anomalous_mask = preds == -1
                 anomalous_count = int(anomalous_mask.sum())
-                anomalous_pct = float(round((anomalous_count / len(clean_num_df)) * 100, 2))
-                anomalous_indices = [int(idx) for idx in clean_num_df.index[anomalous_mask].tolist()[:50]]
+                anomalous_pct = float(round((anomalous_count / len(predict_df)) * 100, 2))
+                anomalous_indices = [int(idx) for idx in predict_df.index[anomalous_mask].tolist()[:50]]
 
                 anomalies = {
                     "method": "isolation_forest",
@@ -248,6 +254,7 @@ def profile_dataset(df: pd.DataFrame) -> dict:
             warnings.append("Fewer than 5 non-null numeric rows available for Isolation Forest anomaly detection.")
     else:
         warnings.append("Fewer than 2 numeric columns available for anomaly detection.")
+
 
     # 3. Industrial Signals Detection
     industrial_signals: Dict[str, Any] = {}

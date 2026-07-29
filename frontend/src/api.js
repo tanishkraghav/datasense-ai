@@ -6,7 +6,7 @@ API_BASE_URL = API_BASE_URL.replace(/\/+$/, '')
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000, // 60 seconds timeout to handle Render cold starts
+  timeout: 120000, // 120 seconds timeout for general requests
 })
 
 export const uploadDataset = async (file) => {
@@ -16,6 +16,7 @@ export const uploadDataset = async (file) => {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    timeout: 300000, // 5 minutes timeout for file parsing & profiling
   })
   return response.data
 }
@@ -31,7 +32,9 @@ export const getProfile = async (datasetId) => {
 }
 
 export const generateReport = async (datasetId) => {
-  const response = await api.post(`/datasets/${datasetId}/report`)
+  const response = await api.post(`/datasets/${datasetId}/report`, {}, {
+    timeout: 300000, // 5 minutes timeout for LangGraph report generation
+  })
   return response.data
 }
 
