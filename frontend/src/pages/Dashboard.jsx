@@ -10,25 +10,37 @@ import {
   Sparkles,
   Clock,
   CheckCircle2,
+  Loader2,
+  Server,
 } from 'lucide-react'
 
 export default function Dashboard() {
   const [datasets, setDatasets] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isWakingUp, setIsWakingUp] = useState(false)
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
   const fetchDatasets = async () => {
     setLoading(true)
     setError('')
+    setIsWakingUp(false)
+
+    // Set waking up notice if loading takes longer than 3 seconds
+    const timer = setTimeout(() => {
+      setIsWakingUp(true)
+    }, 3000)
+
     try {
       const data = await listDatasets()
       setDatasets(data)
     } catch (err) {
       console.error(err)
-      setError('Failed to load datasets. Please verify the backend is running on http://localhost:8000.')
+      setError('Failed to load datasets. If the server was idle, click Retry below to reconnect.')
     } finally {
+      clearTimeout(timer)
       setLoading(false)
+      setIsWakingUp(false)
     }
   }
 
@@ -71,32 +83,54 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Cold Start / Waking Up Notice */}
+      {isWakingUp && loading && (
+        <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-300 text-sm flex items-center space-x-3 shadow-lg animate-pulse">
+          <Server className="w-5 h-5 text-amber-400 flex-shrink-0" />
+          <div>
+            <span className="font-bold block">Waking up backend server...</span>
+            <span className="text-xs text-amber-400/80">
+              Render Free Instance is spinning up from idle state. This takes ~15-30 seconds on cold start. Please stand by!
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Error state */}
       {error && (
         <div className="p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-sm flex items-center justify-between">
           <span>{error}</span>
           <button
             onClick={fetchDatasets}
-            className="text-xs bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 px-3 py-1 rounded-lg border border-rose-500/40"
+            className="text-xs bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 px-4 py-1.5 rounded-lg border border-rose-500/40 font-semibold transition-colors"
           >
-            Retry
+            Retry Connection
           </button>
         </div>
       )}
 
-      {/* Loading Grid Skeleton */}
+      {/* Loading Grid Skeleton with Spinner */}
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-52 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 animate-pulse space-y-4"
-            >
-              <div className="h-6 bg-slate-800 rounded w-3/4"></div>
-              <div className="h-4 bg-slate-800/60 rounded w-1/2"></div>
-              <div className="h-10 bg-slate-800/80 rounded mt-6"></div>
-            </div>
-          ))}
+        <div className="space-y-6">
+          <div className="flex items-center justify-center space-x-3 py-6 text-slate-400">
+            <Loader2 className="w-6 h-6 text-teal-400 animate-spin" />
+            <span className="text-sm font-medium text-slate-300">
+              {isWakingUp ? 'Spinning up server instance...' : 'Fetching dataset catalog...'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="h-52 bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 animate-pulse space-y-4"
+              >
+                <div className="h-6 bg-slate-800 rounded w-3/4"></div>
+                <div className="h-4 bg-slate-800/60 rounded w-1/2"></div>
+                <div className="h-10 bg-slate-800/80 rounded mt-6"></div>
+              </div>
+            ))}
+          </div>
         </div>
       ) : datasets.length === 0 ? (
         /* Empty State */

@@ -1,9 +1,12 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+let API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// Ensure no trailing slash to prevent double-slash routes
+API_BASE_URL = API_BASE_URL.replace(/\/+$/, '')
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  timeout: 60000, // 60 seconds timeout to handle Render cold starts
 })
 
 export const uploadDataset = async (file) => {
