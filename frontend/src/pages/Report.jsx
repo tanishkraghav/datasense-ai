@@ -759,6 +759,76 @@ export default function Report() {
               )}
             </div>
 
+            {/* 6.5. MACHINE / EQUIPMENT RISK SUMMARY */}
+            <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6 print:bg-white print:border-gray-300 print:shadow-none">
+              <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 print:border-gray-300">
+                <AlertTriangle className="w-5 h-5 text-amber-400 print:hidden" />
+                <h2 className="text-xl font-bold text-slate-100 print:text-black">
+                  Machine / Equipment Risk Summary
+                </h2>
+              </div>
+
+              {report?.entity_analysis ? (
+                <>
+                  <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-line print:text-black">
+                    {report.entity_analysis.narrative}
+                  </div>
+
+                  {/* Optional: Show a table of escalated/watched entities */}
+                  {report.entity_analysis.entities && report.entity_analysis.entities.length > 0 && (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-slate-100 mb-2">Entities Requiring Attention</h3>
+                      <div className="overflow-x-auto border border-slate-800 rounded-2xl">
+                        <table className="w-full text-left text-xs font-mono">
+                          <thead className="bg-slate-950/80 text-slate-400 border-b border-slate-800 print:bg-gray-100 print:text-black">
+                            <tr>
+                              <th className="p-3">Entity ID</th>
+                              <th className="p-3">Severity</th>
+                              <th className="p-3">Record Count</th>
+                              <th className="p-3">Anomaly Count</th>
+                              <th className="p-3">Threshold Breaches</th>
+                              <th className="p-3">Downtime (mins)</th>
+                              <th className="p-3">Fault Count</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-800/60 text-slate-300 print:divide-gray-200 print:text-black">
+                            {report.entity_analysis.entities
+                              .filter(e => e.severity === 'escalate' || e.severity === 'watch')
+                              .map((entity, idx) => (
+                                <tr key={entity.entity_id || idx} className={entity.severity === 'escalate' ? 'bg-amber-500/10' : ''}>
+                                  <td className="p-3 font-semibold text-slate-100 print:text-black"> {entity.entity_id} </td>
+                                  <td className="p-3">
+                                    <span
+                                      className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase ${
+                                        entity.severity === 'escalate'
+                                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                                          : entity.severity === 'watch'
+                                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                                          : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                                      }`}
+                                    >
+                                      {entity.severity}
+                                    </span>
+                                  </td>
+                                  <td className="p-3 text-slate-300"> {entity.row_count} </td>
+                                  <td className="p-3 text-slate-300"> {entity.anomaly_count} </td>
+                                  <td className="p-3 text-slate-300"> {entity.threshold_breach_count} </td>
+                                  <td className="p-3 text-slate-300"> {entity.downtime_total?.toFixed(1) ?? 0} </td>
+                                  <td className="p-3 text-slate-300"> {entity.fault_count} </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-slate-400 text-center py-8">
+                  No machine/entity risk data available for this dataset.
+                </div>
+              )}
+            </div>
             {/* 7. STRATEGIC ACTION PLAN & RECOMMENDATIONS */}
             <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-8 shadow-xl space-y-6 print:bg-white print:border-gray-300 print:shadow-none">
               <div className="flex items-center space-x-2 border-b border-slate-800 pb-3 print:border-gray-300">

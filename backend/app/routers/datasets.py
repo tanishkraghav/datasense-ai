@@ -327,7 +327,7 @@ async def get_dataset_rows(dataset_id: str, indices: Optional[str] = None):
         )
 
     if not indices:
-        sliced_df = df.head(20)
+        sliced_df = df.head(200)
     else:
         try:
             parsed_indices = [int(idx.strip()) for idx in indices.split(",") if idx.strip().isdigit()]
